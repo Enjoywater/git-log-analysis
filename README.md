@@ -65,7 +65,7 @@ npx tsx git-log-ai.ts --web --port 8080
 | 옵션 | 설명 | 기본값 |
 |------|------|--------|
 | `--repo <path>` | 로컬 Git 레포지토리 경로 | 현재 디렉토리 |
-| `--author <email>` | 작성자 이메일 | xxxxxx@gmail.com |
+| `--author <email>` | 작성자 | xxxxxx@gmail.com / xxxx |
 | `--since <date>` | 시작 날짜 (YYYY-MM-DD) | 2023-05-01 |
 | `--web` | 웹 서버 모드로 실행 | - |
 | `--port <number>` | 웹 서버 포트 | 3000 |
@@ -76,7 +76,7 @@ npx tsx git-log-ai.ts --web --port 8080
 
 1. 웹 서버를 실행합니다: `npx tsx git-log-ai.ts --web`
 2. 브라우저에서 `http://localhost:3000`을 엽니다
-3. 로컬 Git 레포지토리 경로(pwd), 작성자 이메일, 분석 시작 날짜를 입력합니다
+3. 로컬 Git 레포지토리 경로(pwd), 작성자, 분석 시작 날짜를 입력합니다
 4. "Git 로그 분석하기" 버튼을 클릭합니다
 5. (선택) "🤖 GPT로 이력서 분석하기" 버튼으로 경험 위주 이력서 생성 (OpenAI API 키 필요)
 

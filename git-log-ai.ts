@@ -97,7 +97,7 @@ Git Log AI CLI 도구
 
 옵션:
   --repo <path>        Git 로컬 레포지토리 경로
-  --author <email>     작성자 이메일 (기본: xxxx@gmail.com)
+  --author <email>     작성자 (xxxx@gmail.com / xxxx)
   --since <date>       시작 날짜 (기본: 2023-05-01)
   --web                웹 서버 모드로 실행
   --port <number>      웹 서버 포트 (기본: 3000)
@@ -534,7 +534,8 @@ async function main() {
   
   // CLI 모드
   const repoPath = args.repo || process.cwd();
-  const author = args.author || '';
+  const author = args.author || 'jieun.sagong@payhere.in';
+  // const author = args.author || 'heungsoo1@gmail.com';
   const since = args.since || '2023-05-01';
   
   console.log('🔍 Git 로그를 분석하는 중...\n');
