@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Git Log AI</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .form-container {
+            padding: 40px;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e1e5e9;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+            width: 100%;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+
+        .results {
+            margin-top: 30px;
+        }
+
+        .commit-card {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 15px;
+            transition: transform 0.2s ease;
+        }
+
+        .commit-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .commit-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .commit-hash {
+            background: #667eea;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 12px;
+        }
+
+        .commit-date {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .commit-author {
+            color: #333;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .commit-subject {
+            color: #555;
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+
+        .commit-body {
+            color: #777;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .stats {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .error {
+            background: #ffebee;
+            color: #c62828;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+
+        .no-results {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .no-results h3 {
+            margin-bottom: 10px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+                border-radius: 15px;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .form-container {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔍 Git Log AI</h1>
+            <p>어디서든 Git 레포지토리의 커밋 로그를 확인하세요</p>
+        </div>
+        
+        <div class="form-container">
+            <form id="gitLogForm">
+                <div class="form-group">
+                    <label for="repoPath">📁 로컬 레포지토리 경로</label>
+                    <input type="text" id="repoPath" placeholder="/path/to/your/repository" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="author">👤 작성자 이메일</label>
+                    <input type="email" id="author" placeholder="xxxx@gmail.com" value="xxxx@gmail.com" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="since">📅 시작 날짜</label>
+                    <input type="date" id="since" value="2023-05-01" required>
+                </div>
+                
+                <button type="submit" class="btn" id="submitBtn">
+                    🔍 Git 로그 분석하기
+                </button>
+                
+                <button type="button" class="btn" id="analyzeBtn" style="display: none; margin-top: 10px; background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);">
+                    🤖 GPT로 이력서 분석하기
+                </button>
+            </form>
+            
+            <div id="loading" class="loading" style="display: none;">
+                <p>⏳ Git 로그를 분석하는 중...</p>
+            </div>
+            
+            <div id="gptLoading" class="loading" style="display: none;">
+                <p>🤖 GPT가 커밋 로그를 분석하여 이력서를 작성하는 중...</p>
+                <p style="font-size: 14px; color: #666; margin-top: 10px;">모든 커밋을 배치로 나누어 분석합니다. 잠시만 기다려주세요.</p>
+                <div id="progressInfo" style="margin-top: 15px; padding: 10px; background: #f0f0f0; border-radius: 5px; font-size: 14px;">
+                    <div id="progressText">분석 준비 중...</div>
+                </div>
+            </div>
+            
+            <div id="results" class="results" style="display: none;">
+                <div id="stats" class="stats"></div>
+                <div id="commits"></div>
+            </div>
+            
+            <div id="resumeAnalysis" class="results" style="display: none;">
+                <div class="stats" style="background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%); color: white;">
+                    <h3>🎯 GPT 이력서 분석 결과</h3>
+                    <p>커밋 로그를 바탕으로 작성된 경험 위주 이력서입니다.</p>
+                </div>
+                <div id="analysisContent" style="background: #f8f9fa; padding: 20px; border-radius: 10px; margin-top: 20px; white-space: pre-line; line-height: 1.6;"></div>
+            </div>
+            
+            <div id="error" class="error" style="display: none;"></div>
+        </div>
+    </div>
+
+    <script>
+        const form = document.getElementById('gitLogForm');
+        const loading = document.getElementById('loading');
+        const gptLoading = document.getElementById('gptLoading');
+        const results = document.getElementById('results');
+        const resumeAnalysis = document.getElementById('resumeAnalysis');
+        const error = document.getElementById('error');
+        const submitBtn = document.getElementById('submitBtn');
+        const analyzeBtn = document.getElementById('analyzeBtn');
+        const stats = document.getElementById('stats');
+        const commits = document.getElementById('commits');
+        const analysisContent = document.getElementById('analysisContent');
+        
+        let currentCommits = [];
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const repoPath = document.getElementById('repoPath').value;
+            const author = document.getElementById('author').value;
+            const since = document.getElementById('since').value;
+            
+            // UI 상태 변경
+            loading.style.display = 'block';
+            results.style.display = 'none';
+            error.style.display = 'none';
+            submitBtn.disabled = true;
+            submitBtn.textContent = '⏳ 분석 중...';
+            
+            try {
+                const response = await fetch('/api/git-log', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        repoPath,
+                        author,
+                        since
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.error || '서버 오류가 발생했습니다.');
+                }
+                
+                displayResults(data);
+                
+            } catch (err) {
+                showError(err.message);
+            } finally {
+                loading.style.display = 'none';
+                submitBtn.disabled = false;
+                submitBtn.textContent = '🔍 Git 로그 분석하기';
+            }
+        });
+        
+        // GPT 분석 버튼 이벤트
+        analyzeBtn.addEventListener('click', async () => {
+            if (currentCommits.length === 0) {
+                showError('먼저 Git 로그를 분석해주세요.');
+                return;
+            }
+            
+            gptLoading.style.display = 'block';
+            resumeAnalysis.style.display = 'none';
+            error.style.display = 'none';
+            analyzeBtn.disabled = true;
+            analyzeBtn.textContent = '🤖 분석 중...';
+            
+            try {
+                const response = await fetch('/api/analyze-resume', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        commits: currentCommits
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.error || 'GPT 분석 중 오류가 발생했습니다.');
+                }
+                
+                displayResumeAnalysis(data.formatted);
+                
+            } catch (err) {
+                showError(err.message);
+            } finally {
+                gptLoading.style.display = 'none';
+                analyzeBtn.disabled = false;
+                analyzeBtn.textContent = '🤖 GPT로 이력서 분석하기';
+            }
+        });
+        
+        function displayResults(data) {
+            const { commits: commitList, count } = data;
+            currentCommits = commitList; // 전역 변수에 저장
+            
+            // 통계 표시
+            stats.innerHTML = `
+                <h3>📊 분석 결과</h3>
+                <p>총 <strong>${count}</strong>개의 커밋을 찾았습니다.</p>
+            `;
+            
+            // 커밋 목록 표시
+            if (commitList.length === 0) {
+                commits.innerHTML = `
+                    <div class="no-results">
+                        <h3>📝 커밋이 없습니다</h3>
+                        <p>해당 조건에 맞는 커밋을 찾을 수 없습니다.</p>
+                    </div>
+                `;
+            } else {
+                commits.innerHTML = commitList.map(commit => `
+                    <div class="commit-card">
+                        <div class="commit-header">
+                            <span class="commit-hash">${commit.hash.slice(0, 7)}</span>
+                            <span class="commit-date">${commit.date}</span>
+                        </div>
+                        <div class="commit-author">👤 ${commit.author} (${commit.email})</div>
+                        <div class="commit-subject">📝 ${commit.subject}</div>
+                        ${commit.body ? `<div class="commit-body">${commit.body}</div>` : ''}
+                    </div>
+                `).join('');
+            }
+            
+            results.style.display = 'block';
+            analyzeBtn.style.display = 'block'; // GPT 분석 버튼 표시
+        }
+        
+        function displayResumeAnalysis(formattedAnalysis) {
+            analysisContent.textContent = formattedAnalysis;
+            resumeAnalysis.style.display = 'block';
+        }
+        
+        function showError(message) {
+            error.textContent = `❌ 오류: ${message}`;
+            error.style.display = 'block';
+        }
+    </script>
+</body>
+</html>
