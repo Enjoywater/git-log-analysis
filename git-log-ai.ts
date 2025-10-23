@@ -234,12 +234,15 @@ function formatCommitOutput(commits: CommitInfo[]): string {
 }
 
 // --------------------------- 프로젝트 컨텍스트 함수 ---------------------------
-async function getProjectContext(): Promise<string> {
+async function getProjectContext(repoPath: string): Promise<string> {
   try {
     // package.json에서 프로젝트 정보 추출
-    const packageJsonPath = join(process.cwd(), 'package.json');
+    const packageJsonPath = join(repoPath, 'package.json');
     if (existsSync(packageJsonPath)) {
-      const packageJson = JSON.parse(execSync('cat package.json', { encoding: 'utf8' }));
+      const packageJson = JSON.parse(execSync('cat package.json', { 
+        cwd: repoPath,
+        encoding: 'utf8' 
+      }));
       
       const context = `프로젝트명: ${packageJson.name || 'Unknown'}
 설명: ${packageJson.description || 'No description'}
@@ -256,7 +259,7 @@ async function getProjectContext(): Promise<string> {
 }
 
 // --------------------------- GPT 분석 기능 ---------------------------
-async function analyzeCommitsWithGPT(commits: CommitInfo[]): Promise<ResumeAnalysis> {
+async function analyzeCommitsWithGPT(commits: CommitInfo[], repoPath: string): Promise<ResumeAnalysis> {
   const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
   });
@@ -266,7 +269,7 @@ async function analyzeCommitsWithGPT(commits: CommitInfo[]): Promise<ResumeAnaly
   }
 
   // 프로젝트 컨텍스트 가져오기
-  const projectContext = await getProjectContext();
+  const projectContext = await getProjectContext(repoPath);
   console.log(`📋 프로젝트 컨텍스트: ${projectContext.substring(0, 100)}...`);
 
   // 배치 크기 설정 (토큰 제한을 고려하여)
@@ -487,13 +490,17 @@ async function startWebServer(port: number = 3000) {
     // GPT 분석 API 엔드포인트
     app.post('/api/analyze-resume', async (req, res) => {
       try {
-        const { commits } = req.body;
+        const { commits, repoPath } = req.body;
         
         if (!commits || !Array.isArray(commits) || commits.length === 0) {
           return res.status(400).json({ error: '커밋 데이터가 필요합니다.' });
         }
         
-        const analysis = await analyzeCommitsWithGPT(commits);
+        if (!repoPath) {
+          return res.status(400).json({ error: '레포지토리 경로가 필요합니다.' });
+        }
+        
+        const analysis = await analyzeCommitsWithGPT(commits, repoPath);
         const formattedAnalysis = formatResumeAnalysis(analysis);
         
         res.json({ 
@@ -552,7 +559,7 @@ async function main() {
     
     if (args.analyze) {
       console.log('🤖 GPT로 커밋 로그를 분석하는 중...\n');
-      const analysis = await analyzeCommitsWithGPT(commits);
+      const analysis = await analyzeCommitsWithGPT(commits, repoPath);
       const formattedAnalysis = formatResumeAnalysis(analysis);
       console.log(formattedAnalysis);
     } else {

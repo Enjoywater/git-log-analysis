@@ -346,7 +346,8 @@
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({
-                        commits: currentCommits
+                        commits: currentCommits,
+                        repoPath: document.getElementById('repoPath').value
                     })
                 });
                 
