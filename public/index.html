@@ -234,8 +234,27 @@
                 </button>
                 
                 <button type="button" class="btn" id="copyBtn" style="display: none; margin-top: 10px; background: linear-gradient(135deg, #4ecdc4 0%, #44a08d 100%);">
-                    📋 커밋 정보 복사하기
+                    📋 전체 커밋 복사하기
                 </button>
+                
+                <div id="rangeCopySection" style="display: none; margin-top: 15px; padding: 15px; background: #f8f9fa; border-radius: 10px; border: 1px solid #e9ecef;">
+                    <h4 style="margin: 0 0 10px 0; color: #495057;">📋 범위별 복사 (내용이 많아서 prompt에 모두 붙여넣기가 어려운 경우에 사용하세요.)</h4>
+                    <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                        <div style="display: flex; align-items: center; gap: 5px;">
+                            <label for="startRange" style="font-size: 14px; color: #6c757d;">시작:</label>
+                            <input type="number" id="startRange" min="1" value="1" style="width: 60px; padding: 5px; border: 1px solid #ced4da; border-radius: 4px;">
+                        </div>
+                        <span style="color: #6c757d;">~</span>
+                        <div style="display: flex; align-items: center; gap: 5px;">
+                            <label for="endRange" style="font-size: 14px; color: #6c757d;">끝:</label>
+                            <input type="number" id="endRange" min="1" value="10" style="width: 60px; padding: 5px; border: 1px solid #ced4da; border-radius: 4px;">
+                        </div>
+                        <button type="button" class="btn" id="rangeCopyBtn" style="background: linear-gradient(135deg, #6c5ce7 0%, #a29bfe 100%); font-size: 14px; padding: 8px 15px;">
+                            📋 범위 복사
+                        </button>
+                    </div>
+                    <div id="rangeInfo" style="font-size: 12px; color: #6c757d; margin-top: 8px;"></div>
+                </div>
             </form>
             
             <div id="loading" class="loading" style="display: none;">
@@ -276,6 +295,12 @@
         const error = document.getElementById('error');
         const submitBtn = document.getElementById('submitBtn');
         const analyzeBtn = document.getElementById('analyzeBtn');
+        const copyBtn = document.getElementById('copyBtn');
+        const rangeCopySection = document.getElementById('rangeCopySection');
+        const startRange = document.getElementById('startRange');
+        const endRange = document.getElementById('endRange');
+        const rangeCopyBtn = document.getElementById('rangeCopyBtn');
+        const rangeInfo = document.getElementById('rangeInfo');
         const stats = document.getElementById('stats');
         const commits = document.getElementById('commits');
         const analysisContent = document.getElementById('analysisContent');
@@ -393,6 +418,84 @@
             }
         });
         
+        // 범위별 복사 버튼 이벤트
+        rangeCopyBtn.addEventListener('click', async () => {
+            if (currentCommits.length === 0) {
+                showError('먼저 Git 로그를 분석해주세요.');
+                return;
+            }
+            
+            const start = parseInt(startRange.value);
+            const end = parseInt(endRange.value);
+            
+            // 유효성 검사
+            if (start < 1 || end < 1 || start > currentCommits.length || end > currentCommits.length) {
+                showError(`범위는 1부터 ${currentCommits.length} 사이여야 합니다.`);
+                return;
+            }
+            
+            if (start > end) {
+                showError('시작 번호는 끝 번호보다 작거나 같아야 합니다.');
+                return;
+            }
+            
+            try {
+                const selectedCommits = currentCommits.slice(start - 1, end);
+                const formattedText = formatCommitsForCopy(selectedCommits);
+                await navigator.clipboard.writeText(formattedText);
+                
+                // 성공 피드백
+                rangeCopyBtn.textContent = '✅ 복사 완료!';
+                rangeCopyBtn.style.background = 'linear-gradient(135deg, #4caf50 0%, #45a049 100%)';
+                
+                setTimeout(() => {
+                    rangeCopyBtn.textContent = '📋 범위 복사';
+                    rangeCopyBtn.style.background = 'linear-gradient(135deg, #6c5ce7 0%, #a29bfe 100%)';
+                }, 2000);
+                
+            } catch (err) {
+                showError('복사에 실패했습니다. 브라우저에서 클립보드 접근을 허용해주세요.');
+            }
+        });
+        
+        // 범위 입력 시 정보 업데이트
+        function updateRangeInfo() {
+            if (currentCommits.length > 0) {
+                const maxCommits = currentCommits.length;
+                
+                // 최대값 설정
+                startRange.max = maxCommits;
+                endRange.max = maxCommits;
+                
+                let start = parseInt(startRange.value) || 1;
+                let end = parseInt(endRange.value) || 10;
+                
+                // 최댓값 초과 시 자동 조정
+                if (start > maxCommits) {
+                    start = maxCommits;
+                    startRange.value = start;
+                }
+                if (end > maxCommits) {
+                    end = maxCommits;
+                    endRange.value = end;
+                }
+                
+                // 시작이 끝보다 큰 경우 조정
+                if (start > end) {
+                    end = start;
+                    endRange.value = end;
+                }
+                
+                const count = Math.max(0, end - start + 1);
+                rangeInfo.textContent = `선택된 커밋: ${count}개 (${start}번째 ~ ${end}번째)`;
+            }
+        }
+        
+        startRange.addEventListener('input', updateRangeInfo);
+        endRange.addEventListener('input', updateRangeInfo);
+        startRange.addEventListener('blur', updateRangeInfo);
+        endRange.addEventListener('blur', updateRangeInfo);
+        
         function displayResults(data) {
             const { commits: commitList, count } = data;
             currentCommits = commitList; // 전역 변수에 저장
@@ -428,6 +531,12 @@
             results.style.display = 'block';
             analyzeBtn.style.display = 'block'; // GPT 분석 버튼 표시
             copyBtn.style.display = 'block'; // 복사 버튼 표시
+            rangeCopySection.style.display = 'block'; // 범위별 복사 섹션 표시
+            
+            // 범위 입력 필드 초기화
+            startRange.value = 1;
+            endRange.value = Math.min(10, commitList.length);
+            updateRangeInfo();
         }
         
         function displayResumeAnalysis(formattedAnalysis) {
@@ -436,15 +545,14 @@
         }
         
         function formatCommitsForCopy(commits) {
-            let formatted = `# Git 커밋 로그 분석\n\n`;
-            formatted += `총 ${commits.length}개의 커밋을 찾았습니다.\n\n`;
+            let formatted = '';
             
             commits.forEach((commit, index) => {
                 formatted += `${commit.date} - ${commit.subject}`;
                 if (commit.body && commit.body.trim()) {
                     formatted += `\n${commit.body}`;
                 }
-                formatted += `\n\n`;
+                formatted += `\n`;
             });
             
             formatted += `\n# AI 분석 요청\n\n`;
