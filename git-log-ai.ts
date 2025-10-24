@@ -327,7 +327,6 @@ ${commitsText}
 - 기술적 깊이와 복잡성 강조
 - 비즈니스 임팩트와 수치화된 성과 포함
 - 문제 해결 과정과 의사결정 근거 설명
-- 팀 리더십과 협업 경험 구체화
 
 JSON 형식으로 응답:
 {
@@ -448,11 +447,6 @@ function formatResumeAnalysis(analysis: ResumeAnalysis): string {
     output += `${index + 1}. ${solving}\n`;
   });
   output += `\n`;
-  
-  output += `## 👥 리더십 & 협업\n`;
-  analysis.leadership.forEach((leadership, index) => {
-    output += `${index + 1}. ${leadership}\n`;
-  });
   
   return output;
 }
